@@ -136,6 +136,13 @@ names(cd) <- c("month", "hour", "temp", "prec", "windV", "windD", "Humid",
                "insolation", "totalcloud", "mid_low_cloud", "visibility",
                "Min_cloudheight", "groundC", "groundtemp")
 
+# cbind pm and cd
+total_data <- cbind(cd, pm)
+
+# remove hour
+total_data <- total_data[, -20]
+
 # save data
-write.csv(pm, "pm.csv")
-write.csv(cd, "cd.csv")
+# write.csv(pm, "pm.csv")
+# write.csv(cd, "cd.csv")
+write.csv(total_data, "total_data.csv")
