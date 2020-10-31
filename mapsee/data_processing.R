@@ -142,7 +142,15 @@ total_data <- cbind(cd, pm)
 # remove hour
 total_data <- total_data[, -20]
 
+# remove ground condition
+total_data <- total_data[, -18]
+
+# month, hour,  -> factor
+total_data$month <- factor(total_data$month)
+total_data$hour <- factor(total_data$hour)
+
 # save data
 # write.csv(pm, "pm.csv")
 # write.csv(cd, "cd.csv")
 write.csv(total_data, "total_data.csv")
+
