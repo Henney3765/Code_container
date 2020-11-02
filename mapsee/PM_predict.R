@@ -4,26 +4,38 @@
 
 # import packages
 library(car)
+library(mice)
 
 # import data
 data <- read.csv("total_data.csv")
+data <- data[, -1]
 str(data)
+
 
 ## EDA
 summary(data)
+ex <- na.omit(data)
+plot(data$temp, data$PM10)
+plot(data$prec, data$PM10)
+plot(data$windV, data$PM10)
+plot(data$windD, data$PM10)
+plot(data$vaporP, data$PM10)
 plot(data$totalcloud, data$PM10)
 
+## NA 처리
+# 결측치 비율 확인 함수
+pMiss <- function(x){sum(is.na(x)) / length(x)*100}
+apply(data, 2, pMiss)
 
-# NA 처리
-data$temp[is.na(data$temp)] <- mean(data$temp, na.rm = TRUE)
-data$prec[is.na(data$prec)] <- 0
+# sunhr, insolation, visibility -> 결측치가 너무 많아서 변수 삭제
+data <- data[, c(-12, -13, -16)]
 
-for (i in 1:ncol(data)) {
-  if(sum(is.na(data[, i])) > 0){
-    data[, i][is.na(data[, i])] <- mean(data[, i], na.rm = TRUE)
-  }
-}
+# 결측치 대체
+mice_result <- mice(data, seed = 1234, m = 5)
+mice_result
 
+data <- complete(mice_result, 1)
+str(data)
 
 # devide train, test dataset
 set.seed(1)
@@ -31,10 +43,20 @@ trainIdx <- sample(1:nrow(data), size = 0.7 * nrow(data))
 train <- data[trainIdx , ]
 test <- data[-trainIdx, ]
 
-
 ## MLR_1
 pm_MLR_1 <- lm(PM10 ~ ., data = train, na.action = na.omit)
 summary(pm_MLR_1)
+
+# p-value가 높은 localP, sealevelP 제거
+data <- data[, c(-10, -11)]
+
+
+# re-devide train, test dataset
+set.seed(1)
+trainIdx <- sample(1:nrow(data), size = 0.7 * nrow(data))
+train <- data[trainIdx , ]
+test <- data[-trainIdx, ]
+
 pm_MLR_pred_1 <- predict(pm_MLR_1, test)
 
 # RMSE
@@ -51,11 +73,10 @@ rmse <- function(actual, predict) {
 rmse(test$PM10, pm_MLR_pred_1)
 
 # 다중공산성 확인
-vif(pm_MLR_3)
+vif(pm_MLR_1)
 
-# dewpoint, localp, seelevelp, groundtemp 제거
-data <- data[, c(-9, -10, -11, -18)]
-str(data)
+# dewpoint 삭제
+data <- data[, -9]
 
 # devide train, test dataset
 set.seed(1)
@@ -68,23 +89,15 @@ pm_MLR_2 <- lm(PM10 ~ ., data = train, na.action = na.omit)
 summary(pm_MLR_2)
 pm_MLR_pred_2 <- predict(pm_MLR_2, test)
 
-# 유의하지 않은 독립변수 제거(temp, vaporP)
-data <- data[, c(-3, -8)]
+# 다중공산성 확인
+vif(pm_MLR_2)
 
-# devide train, test dataset
-set.seed(1)
-trainIdx <- sample(1:nrow(data), size = 0.7 * nrow(data))
-train <- data[trainIdx , ]
-test <- data[-trainIdx, ]
+# rmse of MLR_2
+rmse(test$PM10, pm_MLR_pred_2)
 
-## MLR_3
-pm_MLR_3 <- lm(PM10 ~ ., data = train, na.action = na.omit)
-summary(pm_MLR_3)
-pm_MLR_pred_3 <- predict(pm_MLR_3, test)
-
-rmse(test$PM10, pm_MLR_pred_3)
-coef(pm_MLR_3)
-
+# visualization
+par(mfrow = c(2, 2))
+plot(pm_MLR_2)
 
 ################################################################################
 
@@ -94,7 +107,7 @@ library(caret)
 library(ranger)
 
 # Modeling
-model_grid <- expand.grid(mtry = c(2, 4, 8), splitrule = "variance",
+model_grid <- expand.grid(mtry = 4, splitrule = "variance",
                           min.node.size = 5)
 
 set.seed(1)
