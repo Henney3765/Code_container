@@ -1,6 +1,6 @@
 # set working directory
 getwd()
-setwd("C:/Users/JH/Desktop/4-1/공간통계응용/팀플/20")
+setwd("C:/Users/JH/Desktop/Project/geo")
 
 # import packages
 library(readxl)
@@ -135,7 +135,7 @@ legend("bottomleft", fill = attr(shp_sudo.colors, "palette"),
        legend = legend.text, border = "gray20", box.col = NA)
 
 
-# Local moran's I
+# 경기도만 Local moran's I
 shp_sudo.lw <- poly2nb(shp_sudo, queen = TRUE)
 shp_sudo.lI <- localmoran(shp_sudo$사표율, nb2listw(shp_sudo.lw, zero.policy=TRUE))
 shp_sudo.lI.groups <- classIntervals(shp_sudo.lI[, 1], 5, style = "quantile")
@@ -152,14 +152,35 @@ for (i in 1:(length(shp_sudo.lI.groups$brks)-1)) {
 legend("bottomleft", fill = attr(shp_sudo.lI.colors, "palette"),
        legend = legend.text, border = "gray20", box.col = NA)
 
+# Local p-value
+lIp.groups <- classIntervals(shp.lI[, 5], 4, style = "fixed",
+                             fixedBreaks = c(0, 0.01, 0.05, 0.1, 1))
+lIp.colors <- findColours(lIp.groups, rev(brewer.pal(4, "PuRd")))
+plot(shp, col = lIp.colors, border = "gray20", 
+     main = "Wasted Vote(%) in South Korea (Local p-value)")
 
+legend.text <- vector()
+for (i in 1:(length(lIp.groups$brks)-1)) {
+  legend.text[i] <-
+    paste(round(lIp.groups$brks, 2)[i:(i+1)], collapse = " - ")
+}
+legend(locator(1), fill = attr(lIp.colors, "palette"),
+       legend = legend.text, border = "gray20", box.col = NA)
 
+# 경기도만 local p-value
+lIp.groups <- classIntervals(shp_sudo.lI[, 5], 4, style = "fixed",
+                             fixedBreaks = c(0, 0.01, 0.05, 0.1, 1))
+lIp.colors <- findColours(lIp.groups, rev(brewer.pal(4, "PuRd")))
+plot(shp_sudo, col = lIp.colors, border = "gray20", 
+     main = "Wasted Vote(%) in Metropolitan area (Local p-value)")
 
-
-
-
-
-
+legend.text <- vector()
+for (i in 1:(length(lIp.groups$brks)-1)) {
+  legend.text[i] <-
+    paste(round(lIp.groups$brks, 2)[i:(i+1)], collapse = " - ")
+}
+legend("bottomleft", fill = attr(lIp.colors, "palette"),
+       legend = legend.text, border = "gray20", box.col = NA)
 
 
 
